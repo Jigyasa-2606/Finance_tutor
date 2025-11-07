@@ -85,6 +85,20 @@ def health():
         'chatbot_ready': bot is not None
     })
 
+@app.route('/categorize', methods=['POST'])
+def categorize():
+    data = request.get_json()
+    description = data.get('description', '')
+    amount = data.get('amount', '')
+    if not description:
+        return jsonify({'category': 'Uncategorized'})
+    prompt = f"Classify this transaction: '{description}' for ₹{amount}. " \
+             f"Categories: ['Food', 'Transport', 'Utilities', 'Shopping', 'Investment', 'Salary', 'Other'].\n" \
+             f"Return only one best category."
+    response = bot.model.generate_content(prompt)
+    return jsonify({'category': response.text.strip()})
+
+
 
 if __name__ == '__main__':
     print("\n" + "=" * 60)

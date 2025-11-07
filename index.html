@@ -155,6 +155,8 @@
           <div class="summary-card"><h3>Total Expense</h3><div class="amount" id="totalExpense">₹0</div></div>
         </div>
         <h3 style="margin-top:20px;">Balance: <span id="balance">₹0</span></h3>
+        <h3 style="margin-top:20px;">Monthly Summary</h3>
+        <canvas id="monthlyChart" height="150"></canvas>
         <div class="transaction-list" id="transactionList"></div>
       </div>
     </div>
@@ -216,6 +218,28 @@
         addChatMessage("❌ Could not connect to backend.",false);
       }
     }
+async function addTransaction(){
+  const desc = description.value.trim();
+  const amt = parseFloat(amount.value);
+  if(!desc || !amt) return alert("Fill all fields!");
+
+  // 🧠 Ask backend to categorize
+  let category = "Other";
+  try{
+    const res = await fetch(`${API_URL}/categorize`, {
+      method:"POST", headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({description:desc, amount:amt})
+    });
+    const data = await res.json();
+    category = data.category;
+  }catch{}
+
+  transactions.push({id:Date.now(), description:desc, amount:amt, type:document.getElementById("type").value, date:document.getElementById("date").value, category});
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+  description.value=""; amount.value="";
+  updateTracker();
+}
+
 
     // ---- Voice Recognition ----
     const micBtn=document.getElementById("micBtn");
@@ -279,5 +303,61 @@
     }
     updateTracker();
   </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js">
+  let chart;
+
+function updateChart() {
+  const ctx = document.getElementById("monthlyChart").getContext("2d");
+
+  // Prepare monthly totals
+  const monthlyData = {};
+  transactions.forEach(t => {
+    const month = new Date(t.date).toLocaleString("default", { month: "short" });
+    if (!monthlyData[month]) monthlyData[month] = { income: 0, expense: 0 };
+    monthlyData[month][t.type] += t.amount;
+  });
+
+  const labels = Object.keys(monthlyData);
+  const incomeData = labels.map(m => monthlyData[m].income);
+  const expenseData = labels.map(m => monthlyData[m].expense);
+
+  // Destroy old chart before creating new one
+  if (chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Income",
+          data: incomeData,
+          backgroundColor: "rgba(16, 185, 129, 0.7)"
+        },
+        {
+          label: "Expense",
+          data: expenseData,
+          backgroundColor: "rgba(239, 68, 68, 0.7)"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: "white" } },
+        title: {
+          display: false
+        }
+      },
+      scales: {
+        x: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" } },
+        y: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" } }
+      }
+    }
+  });
+}
+
+</script>
+
 </body>
 </html>
