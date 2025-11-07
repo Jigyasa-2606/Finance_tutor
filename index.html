@@ -1,595 +1,283 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Chatbot & Tracker</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .panel {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 600px;
-        }
-
-        .panel-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Chatbot Styles */
-        #chatMessages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message-content {
-            max-width: 70%;
-            padding: 12px 18px;
-            border-radius: 18px;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-        }
-
-        .message.user .message-content {
-            background: #667eea;
-            color: white;
-        }
-
-        .message.bot .message-content {
-            background: white;
-            color: #333;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .loading {
-            display: flex;
-            gap: 5px;
-            padding: 10px;
-        }
-
-        .loading-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #667eea;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-
-        .loading-dot:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-
-        .loading-dot:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-
-        @keyframes bounce {
-            0%, 80%, 100% {
-                transform: scale(0);
-            }
-            40% {
-                transform: scale(1);
-            }
-        }
-
-        .chat-input-area {
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input-area input {
-            flex: 1;
-            padding: 12px 18px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            font-size: 14px;
-            outline: none;
-            transition: border 0.3s;
-        }
-
-        .chat-input-area input:focus {
-            border-color: #667eea;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        /* Finance Tracker Styles */
-        .tracker-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .tracker-form {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .form-row input, .form-row select {
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 14px;
-            outline: none;
-        }
-
-        .form-row input:focus, .form-row select:focus {
-            border-color: #667eea;
-        }
-
-        .summary-cards {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .summary-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-        }
-
-        .summary-card h3 {
-            font-size: 14px;
-            margin-bottom: 10px;
-            opacity: 0.9;
-        }
-
-        .summary-card .amount {
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .transaction-list {
-            background: #f5f5f5;
-            border-radius: 15px;
-            padding: 15px;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .transaction-item {
-            background: white;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .transaction-info {
-            flex: 1;
-        }
-
-        .transaction-type {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .transaction-type.income {
-            color: #10b981;
-        }
-
-        .transaction-type.expense {
-            color: #ef4444;
-        }
-
-        .transaction-date {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .transaction-amount {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .transaction-amount.income {
-            color: #10b981;
-        }
-
-        .transaction-amount.expense {
-            color: #ef4444;
-        }
-
-        .delete-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-
-        .delete-btn:hover {
-            background: #dc2626;
-        }
-
-        @media (max-width: 968px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 10px;
-            border-radius: 10px;
-            margin: 10px;
-            text-align: center;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance AI Assistant</title>
+  <style>
+    /* ---------- Base Styles ---------- */
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Inter', system-ui, sans-serif;
+      background:linear-gradient(135deg,#00c6ff 0%,#00736d 100%);
+      min-height:100vh; padding:20px;
+      display:flex; justify-content:center; align-items:flex-start;
+      color:#222;
+    }
+    .container {
+      display:grid; grid-template-columns:1fr 1fr; gap:25px;
+      max-width:1400px; width:100%; backdrop-filter:blur(12px);
+    }
+    .panel {
+      background:rgba(255,255,255,0.15);
+      border:1px solid rgba(255,255,255,0.25);
+      border-radius:25px; box-shadow:0 20px 50px rgba(0,0,0,0.25);
+      overflow:hidden; display:flex; flex-direction:column;
+      height:620px; color:white;
+      transition:transform .3s ease, box-shadow .3s ease;
+    }
+    .panel:hover { transform:translateY(-5px); box-shadow:0 25px 60px rgba(0,0,0,0.35); }
+    .panel-header {
+      padding:20px; background:rgba(255,255,255,0.2);
+      font-size:22px; font-weight:600;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom:1px solid rgba(255,255,255,0.3);
+    }
+    .status { font-size:14px; opacity:0.8; }
+    .status.ok{color:#10b981;} .status.offline{color:#ef4444;}
+    /* ---------- Chat ---------- */
+    #chatMessages{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;}
+    .message{display:flex;margin-bottom:15px;animation:fadeIn .4s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+    .message-content{
+      padding:12px 18px;border-radius:18px;max-width:70%;line-height:1.5;
+      word-wrap:break-word;white-space:pre-wrap;font-size:15px;
+    }
+    .message.user{justify-content:flex-end;}
+    .message.user .message-content{
+      background:rgba(0,191,165,0.9);color:#fff;
+      box-shadow:0 4px 15px rgba(0,191,165,0.5);
+    }
+    .message.bot .message-content{
+      background:rgba(255,255,255,0.2);color:#f8f9ff;backdrop-filter:blur(10px);
+    }
+    .loading{display:flex;gap:6px;align-items:center;padding:10px;}
+    .loading-dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:bounce 1.4s infinite ease-in-out both;}
+    .loading-dot:nth-child(1){animation-delay:-.32s;}
+    .loading-dot:nth-child(2){animation-delay:-.16s;}
+    @keyframes bounce{0%,80%,100%{transform:scale(0);}40%{transform:scale(1);}}
+    .chat-input-area{
+      padding:20px;background:rgba(255,255,255,0.2);
+      border-top:1px solid rgba(255,255,255,0.3);
+      display:flex;gap:10px;align-items:center;
+    }
+    .chat-input-area input{
+      flex:1;padding:12px 18px;border:none;border-radius:25px;
+      font-size:15px;background:rgba(255,255,255,0.8);outline:none;color:#333;
+    }
+    .btn{
+      border:none;padding:12px 24px;border-radius:25px;
+      font-weight:600;cursor:pointer;
+      background:linear-gradient(135deg,#00bfa5,#00796b);
+      color:white;transition:all .3s;
+    }
+    .btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,191,165,0.4);}
+    /* Mic button */
+    .mic-btn{
+      border:none;border-radius:50%;width:46px;height:46px;
+      background:rgba(255,255,255,0.8);
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:all .3s;
+    }
+    .mic-btn:hover{background:rgba(255,255,255,1);}
+    .mic-btn.active{background:#00bfa5;color:white;box-shadow:0 0 15px rgba(0,191,165,0.7);}
+    .mic-icon{font-size:22px;}
+    /* ---------- Tracker ---------- */
+    .tracker-content{flex:1;overflow-y:auto;padding:20px;color:#fff;}
+    .tracker-form{
+      background:rgba(255,255,255,0.15);border-radius:15px;padding:20px;margin-bottom:20px;
+      backdrop-filter:blur(12px);
+    }
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+    input,select{border:none;padding:12px;border-radius:12px;font-size:14px;
+      background:rgba(255,255,255,0.8);color:#333;}
+    .summary-cards{display:flex;justify-content:space-between;gap:15px;}
+    .summary-card{
+      flex:1;text-align:center;padding:20px;border-radius:15px;
+      background:linear-gradient(135deg,#009688,#00796b);
+      box-shadow:0 10px 30px rgba(0,0,0,0.3);color:white;
+    }
+    .summary-card h3{font-size:16px;opacity:0.85;}
+    .summary-card .amount{font-size:26px;font-weight:bold;}
+    .transaction-list{margin-top:20px;background:rgba(255,255,255,0.15);
+      border-radius:15px;padding:15px;max-height:250px;overflow-y:auto;}
+    .transaction-item{
+      background:rgba(255,255,255,0.2);padding:12px;border-radius:10px;
+      display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
+    }
+    .transaction-type.income{color:#10b981;}
+    .transaction-type.expense{color:#ef4444;}
+    .transaction-amount.income{color:#10b981;}
+    .transaction-amount.expense{color:#ef4444;}
+    .delete-btn{
+      background:#ef4444;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;
+    }
+    .delete-btn:hover{background:#dc2626;}
+    @media(max-width:968px){.container{grid-template-columns:1fr;}.panel{height:auto;}}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Chatbot Panel -->
-        <div class="panel">
-            <div class="panel-header">
-                <span>💬</span> Finance Chatbot
-            </div>
-            <div id="chatMessages"></div>
-            <div class="chat-input-area">
-                <input type="text" id="chatInput" placeholder="Ask about finance or stock prices..." onkeypress="if(event.key==='Enter') sendMessage()">
-                <button class="btn btn-primary" id="mic-btn">🎙️</button>
-                <button class="btn btn-primary" onclick="sendMessage()" id="sendBtn">Send</button>
-            </div>
-        </div>
-
-        <!-- Finance Tracker Panel -->
-        <div class="panel">
-            <div class="panel-header">
-                <span>💰</span> Finance Tracker
-            </div>
-            <div class="tracker-content">
-                <div class="tracker-form">
-                    <div class="form-row">
-                        <input type="text" id="description" placeholder="Description">
-                        <input type="number" id="amount" placeholder="Amount">
-                    </div>
-                    <div class="form-row">
-                        <select id="type">
-                            <option value="income">Income</option>
-                            <option value="expense">Expense</option>
-                        </select>
-                        <input type="date" id="date" value="">
-                    </div>
-                    <button class="btn btn-primary" onclick="addTransaction()" style="width: 100%; margin-top: 10px;">Add Transaction</button>
-                </div>
-
-                <div class="summary-cards">
-                    <div class="summary-card">
-                        <h3>Total Income</h3>
-                        <div class="amount" id="totalIncome">₹0</div>
-                    </div>
-                    <div class="summary-card">
-                        <h3>Total Expense</h3>
-                        <div class="amount" id="totalExpense">₹0</div>
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <h3 style="color: #333;">Balance: <span id="balance" style="color: #667eea;">₹0</span></h3>
-                </div>
-
-                <div class="transaction-list" id="transactionList"></div>
-            </div>
-        </div>
+  <div class="container">
+    <!-- Chatbot Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>Finance AI Assistant </span>
+        <span id="status" class="status offline">● Offline</span>
+      </div>
+      <div id="chatMessages"></div>
+      <div class="chat-input-area">
+        <input id="chatInput" placeholder="Ask about investments, stocks, or budgeting..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button class="mic-btn" id="micBtn" title="Speak"><span class="mic-icon">🎤</span></button>
+        <button class="btn" onclick="sendMessage()">Send</button>
+      </div>
     </div>
 
-    <script>
-        // API Configuration
-        const API_URL = 'http://localhost:5000';
+    <!-- Tracker Panel -->
+    <div class="panel">
+      <div class="panel-header">Smart Finance Tracker</div>
+      <div class="tracker-content">
+        <div class="tracker-form">
+          <div class="form-row">
+            <input type="text" id="description" placeholder="Description">
+            <input type="number" id="amount" placeholder="Amount">
+          </div>
+          <div class="form-row">
+            <select id="type">
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+            <input type="date" id="date">
+          </div>
+          <button class="btn" onclick="addTransaction()" style="width:100%">Add Transaction</button>
+        </div>
+        <div class="summary-cards">
+          <div class="summary-card"><h3>Total Income</h3><div class="amount" id="totalIncome">₹0</div></div>
+          <div class="summary-card"><h3>Total Expense</h3><div class="amount" id="totalExpense">₹0</div></div>
+        </div>
+        <h3 style="margin-top:20px;">Balance: <span id="balance">₹0</span></h3>
+        <div class="transaction-list" id="transactionList"></div>
+      </div>
+    </div>
+  </div>
 
-        // Set today's date as default
-        document.getElementById('date').valueAsDate = new Date();
+  <script>
+    const API_URL = "http://localhost:5000";
+    const statusEl = document.getElementById("status");
+    document.getElementById("date").valueAsDate = new Date();
 
-        // Chatbot functionality
-        const chatMessages = document.getElementById('chatMessages');
-        const chatInput = document.getElementById('chatInput');
-        const sendBtn = document.getElementById('sendBtn');
+    async function checkHealth(){
+      try{
+        const res = await fetch(`${API_URL}/health`);
+        const data = await res.json();
+        if(data.chatbot_ready||data.gemini_ready){
+          statusEl.textContent="● Online";
+          statusEl.className="status ok";
+        }else throw new Error();
+      }catch{
+        statusEl.textContent="● Offline";
+        statusEl.className="status offline";
+      }
+    }
+    checkHealth(); setInterval(checkHealth,10000);
 
-        function addChatMessage(text, isUser) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+    // ---- Chat Logic ----
+    const chatMessages=document.getElementById("chatMessages");
+    const chatInput=document.getElementById("chatInput");
 
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = text;
+    function addChatMessage(text,isUser){
+      const div=document.createElement("div");
+      div.className=`message ${isUser?'user':'bot'}`;
+      div.innerHTML=`<div class="message-content">${text}</div>`;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop=chatMessages.scrollHeight;
+    }
 
-            messageDiv.appendChild(contentDiv);
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function showLoading() {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message bot';
-            messageDiv.id = 'loading-message';
-
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'message-content loading';
-            loadingDiv.innerHTML = '<div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>';
-
-            messageDiv.appendChild(loadingDiv);
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function removeLoading() {
-            const loadingMsg = document.getElementById('loading-message');
-            if (loadingMsg) {
-                loadingMsg.remove();
-            }
-        }
-
-        const micBtn = document.getElementById("mic-btn");
-        const inputField = document.getElementById("chatInput");
-
-        // Check browser support
-        if (!('webkitSpeechRecognition' in window)) {
-        alert("Speech recognition not supported in this browser.");
-        } else {
-        const recognition = new webkitSpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = "en-IN"; // or "en-US"
-
-        micBtn.addEventListener("click", () => {
-            recognition.start();
-            micBtn.disabled = true;
-            micBtn.innerText = "Listening...";
+    async function sendMessage(){
+      const msg=chatInput.value.trim();
+      if(!msg) return;
+      addChatMessage(msg,true);
+      chatInput.value="";
+      const loading=document.createElement("div");
+      loading.className="message bot";
+      loading.innerHTML=`<div class="message-content loading">
+        <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+      </div>`;
+      chatMessages.appendChild(loading);
+      try{
+        const res=await fetch(`${API_URL}/chat`,{
+          method:"POST",headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({message:msg})
         });
+        const data=await res.json();
+        loading.remove();
+        addChatMessage(data.response||"⚠️ No response.",false);
+      }catch{
+        loading.remove();
+        addChatMessage("❌ Could not connect to backend.",false);
+      }
+    }
 
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            inputField.value = transcript;
-            micBtn.disabled = false;
-            micBtn.innerText = "Speak";
-        };
+    // ---- Voice Recognition ----
+    const micBtn=document.getElementById("micBtn");
+    let recognition;
+    if("webkitSpeechRecognition" in window){
+      recognition=new webkitSpeechRecognition();
+      recognition.continuous=false;
+      recognition.lang="en-IN";
+      recognition.interimResults=false;
+      recognition.onstart=()=>micBtn.classList.add("active");
+      recognition.onend=()=>micBtn.classList.remove("active");
+      recognition.onresult=function(e){
+        const transcript=e.results[0][0].transcript;
+        chatInput.value=transcript;
+        sendMessage();
+      };
+      micBtn.onclick=()=>recognition.start();
+    }else{
+      micBtn.disabled=true;
+      micBtn.title="Speech recognition not supported";
+    }
 
-        recognition.onerror = () => {
-            micBtn.disabled = false;
-            micBtn.innerText = "Speak";
-        };
-        }
-
-        async function sendMessage() {
-            const message = chatInput.value.trim();
-            if (!message) return;
-
-            // Disable input while processing
-            chatInput.disabled = true;
-            sendBtn.disabled = true;
-
-            addChatMessage(message, true);
-            chatInput.value = '';
-
-            showLoading();
-
-            try {
-                const response = await fetch(`${API_URL}/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-
-                const data = await response.json();
-                removeLoading();
-
-                if (data.error) {
-                    addChatMessage('❌ Error: ' + data.response, false);
-                } else {
-                    addChatMessage(data.response, false);
-                }
-            } catch (error) {
-                removeLoading();
-                addChatMessage('❌ Error connecting to server. Make sure the Flask backend is running on port 5000.', false);
-                console.error('Error:', error);
-            } finally {
-                // Re-enable input
-                chatInput.disabled = false;
-                sendBtn.disabled = false;
-                chatInput.focus();
-            }
-        }
-
-        // Finance Tracker functionality
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-
-        function addTransaction() {
-            const description = document.getElementById('description').value;
-            const amount = parseFloat(document.getElementById('amount').value);
-            const type = document.getElementById('type').value;
-            const date = document.getElementById('date').value;
-
-            if (!description || !amount || !date) {
-                alert('Please fill all fields!');
-                return;
-            }
-
-            const transaction = {
-                id: Date.now(),
-                description,
-                amount,
-                type,
-                date
-            };
-
-            transactions.push(transaction);
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-
-            // Clear form
-            document.getElementById('description').value = '';
-            document.getElementById('amount').value = '';
-            document.getElementById('date').valueAsDate = new Date();
-
-            updateTracker();
-        }
-
-        function deleteTransaction(id) {
-            transactions = transactions.filter(t => t.id !== id);
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-            updateTracker();
-        }
-
-        function updateTracker() {
-            const transactionList = document.getElementById('transactionList');
-            transactionList.innerHTML = '';
-
-            let totalIncome = 0;
-            let totalExpense = 0;
-
-            transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            transactions.forEach(transaction => {
-                const item = document.createElement('div');
-                item.className = 'transaction-item';
-
-                if (transaction.type === 'income') {
-                    totalIncome += transaction.amount;
-                } else {
-                    totalExpense += transaction.amount;
-                }
-
-                item.innerHTML = `
-                    <div class="transaction-info">
-                        <div class="transaction-type ${transaction.type}">${transaction.description}</div>
-                        <div class="transaction-date">${new Date(transaction.date).toLocaleDateString()}</div>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <div class="transaction-amount ${transaction.type}">
-                            ${transaction.type === 'income' ? '+' : '-'}₹${transaction.amount.toFixed(2)}
-                        </div>
-                        <button class="delete-btn" onclick="deleteTransaction(${transaction.id})">×</button>
-                    </div>
-                `;
-
-                transactionList.appendChild(item);
-            });
-
-            document.getElementById('totalIncome').textContent = `₹${totalIncome.toFixed(2)}`;
-            document.getElementById('totalExpense').textContent = `₹${totalExpense.toFixed(2)}`;
-            document.getElementById('balance').textContent = `₹${(totalIncome - totalExpense).toFixed(2)}`;
-        }
-
-        // Check server health on load
-        async function checkServerHealth() {
-            try {
-                const response = await fetch(`${API_URL}/health`);
-                const data = await response.json();
-
-                if (data.status === 'ok' && data.chatbot_ready) {
-                    addChatMessage("👋 Hello! I'm your Finance Assistant. Ask me about stocks, investments, budgeting, or savings!", false);
-                } else {
-                    addChatMessage("⚠️ Server is running but chatbot is not ready. Please check the CSV file path in app.py", false);
-                }
-            } catch (error) {
-                addChatMessage("❌ Cannot connect to backend server. Please make sure Flask is running on port 5000. Run: python app.py", false);
-            }
-        }
-
-        // Initialize
-        checkServerHealth();
-        updateTracker();
-    </script>
+    // ---- Tracker Logic ----
+    let transactions=JSON.parse(localStorage.getItem("transactions"))||[];
+    function addTransaction(){
+      const desc=description.value, amt=parseFloat(amount.value),
+            type=document.getElementById("type").value, date=document.getElementById("date").value;
+      if(!desc||!amt) return alert("Fill all fields!");
+      transactions.push({id:Date.now(),description:desc,amount:amt,type,date});
+      localStorage.setItem("transactions",JSON.stringify(transactions));
+      description.value=""; amount.value=""; updateTracker();
+    }
+    function deleteTransaction(id){
+      transactions=transactions.filter(t=>t.id!==id);
+      localStorage.setItem("transactions",JSON.stringify(transactions));
+      updateTracker();
+    }
+    function updateTracker(){
+      const list=document.getElementById("transactionList");
+      list.innerHTML="";
+      let income=0,expense=0;
+      transactions.forEach(t=>{
+        if(t.type==="income") income+=t.amount; else expense+=t.amount;
+        list.innerHTML+=`
+          <div class="transaction-item">
+            <div>
+              <div class="transaction-type ${t.type}">${t.description}</div>
+              <small>${new Date(t.date).toLocaleDateString()}</small>
+            </div>
+            <div>
+              <div class="transaction-amount ${t.type}">
+                ${t.type==="income"?'+':'-'}₹${t.amount}
+              </div>
+              <button class="delete-btn" onclick="deleteTransaction(${t.id})">×</button>
+            </div>
+          </div>`;
+      });
+      totalIncome.textContent=`₹${income.toFixed(2)}`;
+      totalExpense.textContent=`₹${expense.toFixed(2)}`;
+      balance.textContent=`₹${(income-expense).toFixed(2)}`;
+    }
+    updateTracker();
+  </script>
 </body>
 </html>
