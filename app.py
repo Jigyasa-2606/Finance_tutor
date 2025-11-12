@@ -12,7 +12,6 @@ api_key = os.getenv("AI_API_KEY")
 app = Flask(__name__)
 CORS(app)
 
-
 try:
     bot = FinanceAIChatbot(api_key, "final_combined.csv")
     print(f"Chatbot initialized successfully using model: {bot.model_name}")
@@ -20,11 +19,9 @@ except Exception as e:
     print(f"Error initializing chatbot: {e}")
     bot = None
 
-
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
-
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -58,10 +55,8 @@ def chat():
             'error': True
         }), 500
 
-
 @app.route('/stats', methods=['GET'])
 def stats():
-
     try:
         if not bot:
             return jsonify({'error': 'Chatbot not initialized'}), 500
@@ -75,7 +70,6 @@ def stats():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -99,14 +93,10 @@ def categorize():
     return jsonify({'category': response.text.strip()})
 
 
-
 if __name__ == '__main__':
-    print("\n" + "=" * 60)
-    print("🚀 Starting Gemini Finance Chatbot Server")
-    print("=" * 60)
-    print("📍 Server: http://localhost:5000")
-    print("📄 Frontend: http://localhost:5000/")
-    print("🔌 API Endpoint: http://localhost:5000/chat")
-    print("=" * 60 + "\n")
+    print("Starting Gemini Finance Chatbot Server")
+    print("Server: http://localhost:5000")
+    print("Frontend: http://localhost:5000/")
+    print("API Endpoint: http://localhost:5000/chat")
 
     app.run(debug=True, port=5000, host='0.0.0.0')

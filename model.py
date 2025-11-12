@@ -1,6 +1,10 @@
+import pandas as pd
+import numpy as np
 from datasets import load_dataset
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, TrainingArguments, Trainer, pipeline
 import re
-
+import evaluate
+import yfinance as yf
 
 dataset = load_dataset("bilalRahib/fiqa-personal-finance-dataset")
 train_dataset = dataset["train"]
@@ -16,12 +20,9 @@ df["output"] = df["output"].apply(clean)
 
 df.to_csv("fiqa_personal_finance_clean.csv", index=False)
 
-df.head()
-
-from transformers import AutoTokenizer
-
 model_name = "google/flan-t5-small"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
 def preprocess(examples):
     model_inputs = tokenizer(
@@ -43,13 +44,6 @@ def preprocess(examples):
 
 tokenized_dataset = dataset.map(preprocess, batched=True)
 
-from transformers import AutoModelForSeq2SeqLM
-
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
-from transformers import TrainingArguments, Trainer
-
-
 training_args = TrainingArguments(
     output_dir="./finchatbot",
     eval_strategy="epoch",
@@ -57,7 +51,7 @@ training_args = TrainingArguments(
     learning_rate=5e-5,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    num_train_epochs=3,
+    num_train_epochs=5,
     weight_decay=0.01,
     logging_dir="./logs",
     logging_steps=50,
@@ -68,7 +62,6 @@ dataset_split = tokenized_dataset["train"].train_test_split(test_size=0.1, seed=
 train_dataset = dataset_split["train"]
 eval_dataset = dataset_split["test"]
 
-
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -77,26 +70,16 @@ trainer = Trainer(
     tokenizer=tokenizer,
 )
 
-
 trainer.train()
 
 trainer.save_model("./finchatbot-final")
 tokenizer.save_pretrained("./finchatbot-final")
-
-from transformers import pipeline
 
 chatbot = pipeline("text2text-generation", model="./finchatbot-final", tokenizer=tokenizer)
 
 test_input = "What is a mutual fund?"
 response = chatbot(test_input, max_length=100, do_sample=True, top_p=0.9, temperature=0.7, early_stopping=True,repetition_penalty=2.5)
 print("Predicted Answer:", response[0]['generated_text'])
-
-# !pip install evaluate
-#
-# !pip install rouge_score
-
-import evaluate
-import pandas as pd
 
 rouge = evaluate.load("rouge")
 
@@ -114,12 +97,7 @@ for i in range(50):
 results = rouge.compute(predictions=preds, references=refs)
 print(results)
 
-import pandas as pd
-from datasets import Dataset
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, TrainingArguments, Trainer
-
 df2 = pd.read_csv("/content/wandb/final.csv", quoting=3, on_bad_lines="skip").fillna("")
-
 
 dataset = Dataset.from_pandas(df2)
 
@@ -150,9 +128,7 @@ dataset_split = tokenized_dataset.train_test_split(test_size=0.1, seed=42)
 train_dataset = dataset_split["train"]
 eval_dataset = dataset_split["test"]
 
-
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
 
 training_args = TrainingArguments(
     output_dir="./finchatbot2",
@@ -167,7 +143,6 @@ training_args = TrainingArguments(
     save_total_limit=2
 )
 
-
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -176,10 +151,7 @@ trainer = Trainer(
     tokenizer=tokenizer,
 )
 
-
 trainer.train()
-
-import yfinance as yf
 
 def get_stock_info(ticker_symbol):
     try:
@@ -208,7 +180,6 @@ def chatbot():
         else:
             response = get_stock_info(user_input)
             print(response)
-
 
 if __name__ == "__main__":
     chatbot()
