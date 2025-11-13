@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, TrainingArguments, Trainer, pipeline
 import re

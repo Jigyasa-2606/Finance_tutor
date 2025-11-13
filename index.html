@@ -5,37 +5,94 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Finance AI Assistant</title>
   <style>
-    /* ---------- Base Styles ---------- */
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
       font-family:'Inter', system-ui, sans-serif;
       background:linear-gradient(135deg,#00c6ff 0%,#00736d 100%);
-      min-height:100vh; padding:20px;
-      display:flex; justify-content:center; align-items:flex-start;
-      color:#222;
+      min-height:100vh; color:#222;
     }
-    .container {
-      display:grid; grid-template-columns:1fr 1fr; gap:25px;
-      max-width:1400px; width:100%; backdrop-filter:blur(12px);
+
+    /* Login Popup */
+    .login-popup {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center;
+      z-index:1000;
     }
-    .panel {
-      background:rgba(255,255,255,0.15);
-      border:1px solid rgba(255,255,255,0.25);
-      border-radius:25px; box-shadow:0 20px 50px rgba(0,0,0,0.25);
-      overflow:hidden; display:flex; flex-direction:column;
-      height:620px; color:white;
-      transition:transform .3s ease, box-shadow .3s ease;
+    .login-popup.hidden { display:none; }
+    .login-box {
+      background:white; padding:40px; border-radius:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.3); max-width:400px; width:90%;
     }
-    .panel:hover { transform:translateY(-5px); box-shadow:0 25px 60px rgba(0,0,0,0.35); }
-    .panel-header {
+    .login-box h2 { margin-bottom:20px; color:#00736d; }
+    .login-box input {
+      width:100%; padding:12px; margin:10px 0; border:2px solid #ddd;
+      border-radius:8px; font-size:15px;
+    }
+    .login-box button {
+      width:100%; padding:12px; margin:10px 0; border:none; border-radius:8px;
+      font-weight:600; cursor:pointer; font-size:15px; transition:all .3s;
+    }
+    .login-box .btn-login {
+      background:linear-gradient(135deg,#00bfa5,#00796b); color:white;
+    }
+    .login-box .btn-login:hover { transform:translateY(-2px); }
+    .login-box .btn-skip {
+      background:#e0e0e0; color:#666;
+    }
+    .login-box .btn-skip:hover { background:#d0d0d0; }
+
+    /* Main Layout */
+    .main-container {
+      display:flex; height:100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width:280px; background:rgba(0,0,0,0.3); backdrop-filter:blur(10px);
+      padding:20px; overflow-y:auto; transition:all .3s;
+      border-right:1px solid rgba(255,255,255,0.2);
+    }
+    .sidebar.collapsed { width:0; padding:0; overflow:hidden; }
+    .sidebar-header {
+      color:white; font-size:18px; font-weight:600; margin-bottom:20px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .user-info {
+      background:rgba(255,255,255,0.1); padding:15px; border-radius:12px;
+      color:white; margin-bottom:20px; font-size:14px;
+    }
+    .logout-btn {
+      margin-top:10px; padding:8px; background:rgba(255,255,255,0.2);
+      border:none; border-radius:6px; color:white; cursor:pointer;
+      width:100%; font-size:13px;
+    }
+    .logout-btn:hover { background:rgba(255,255,255,0.3); }
+    .chat-history-item {
+      background:rgba(255,255,255,0.1); padding:12px; margin:10px 0;
+      border-radius:10px; color:white; cursor:pointer;
+      transition:all .2s; font-size:14px;
+    }
+    .chat-history-item:hover { background:rgba(255,255,255,0.2); }
+    .chat-history-item small { opacity:0.7; display:block; margin-top:5px; }
+
+    /* Chat Area */
+    .chat-container {
+      flex:1; display:flex; flex-direction:column;
+    }
+    .chat-header {
       padding:20px; background:rgba(255,255,255,0.2);
-      font-size:22px; font-weight:600;
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
       border-bottom:1px solid rgba(255,255,255,0.3);
+      display:flex; align-items:center; justify-content:space-between;
     }
-    .status { font-size:14px; opacity:0.8; }
+    .chat-header h1 { color:white; font-size:24px; }
+    .toggle-sidebar-btn {
+      background:rgba(255,255,255,0.2); border:none; padding:10px 15px;
+      border-radius:8px; color:white; cursor:pointer; font-size:18px;
+    }
+    .toggle-sidebar-btn:hover { background:rgba(255,255,255,0.3); }
+    .status { font-size:14px; margin-left:15px; }
     .status.ok{color:#10b981;} .status.offline{color:#ef4444;}
-    /* ---------- Chat ---------- */
+
     #chatMessages{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;}
     .message{display:flex;margin-bottom:15px;animation:fadeIn .4s ease;}
     @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
@@ -56,6 +113,7 @@
     .loading-dot:nth-child(1){animation-delay:-.32s;}
     .loading-dot:nth-child(2){animation-delay:-.16s;}
     @keyframes bounce{0%,80%,100%{transform:scale(0);}40%{transform:scale(1);}}
+
     .chat-input-area{
       padding:20px;background:rgba(255,255,255,0.2);
       border-top:1px solid rgba(255,255,255,0.3);
@@ -72,7 +130,6 @@
       color:white;transition:all .3s;
     }
     .btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,191,165,0.4);}
-    /* Mic button */
     .mic-btn{
       border:none;border-radius:50%;width:46px;height:46px;
       background:rgba(255,255,255,0.8);
@@ -82,82 +139,50 @@
     .mic-btn:hover{background:rgba(255,255,255,1);}
     .mic-btn.active{background:#00bfa5;color:white;box-shadow:0 0 15px rgba(0,191,165,0.7);}
     .mic-icon{font-size:22px;}
-    /* ---------- Tracker ---------- */
-    .tracker-content{flex:1;overflow-y:auto;padding:20px;color:#fff;}
-    .tracker-form{
-      background:rgba(255,255,255,0.15);border-radius:15px;padding:20px;margin-bottom:20px;
-      backdrop-filter:blur(12px);
-    }
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
-    input,select{border:none;padding:12px;border-radius:12px;font-size:14px;
-      background:rgba(255,255,255,0.8);color:#333;}
-    .summary-cards{display:flex;justify-content:space-between;gap:15px;}
-    .summary-card{
-      flex:1;text-align:center;padding:20px;border-radius:15px;
-      background:linear-gradient(135deg,#009688,#00796b);
-      box-shadow:0 10px 30px rgba(0,0,0,0.3);color:white;
-    }
-    .summary-card h3{font-size:16px;opacity:0.85;}
-    .summary-card .amount{font-size:26px;font-weight:bold;}
-    .transaction-list{margin-top:20px;background:rgba(255,255,255,0.15);
-      border-radius:15px;padding:15px;max-height:250px;overflow-y:auto;}
-    .transaction-item{
-      background:rgba(255,255,255,0.2);padding:12px;border-radius:10px;
-      display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
-    }
-    .transaction-type.income{color:#10b981;}
-    .transaction-type.expense{color:#ef4444;}
-    .transaction-amount.income{color:#10b981;}
-    .transaction-amount.expense{color:#ef4444;}
-    .delete-btn{
-      background:#ef4444;color:white;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;
-    }
-    .delete-btn:hover{background:#dc2626;}
-    @media(max-width:968px){.container{grid-template-columns:1fr;}.panel{height:auto;}}
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Chatbot Panel -->
-    <div class="panel">
-      <div class="panel-header">
-        <span>Finance AI Assistant </span>
-        <span id="status" class="status offline">● Offline</span>
+  <!-- Login Popup -->
+  <div id="loginPopup" class="login-popup">
+    <div class="login-box">
+      <h2>Welcome!</h2>
+      <p style="margin-bottom:20px; color:#666;">Login to save your chat history</p>
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button class="btn-login" onclick="login()">Login</button>
+      <button class="btn-skip" onclick="skipLogin()">Continue without login</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <span>Chat History</span>
+      </div>
+      <div id="userInfo" class="user-info" style="display:none;">
+        <div>Logged in as: <strong id="displayUsername"></strong></div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+      <div id="chatHistoryList"></div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-container">
+      <div class="chat-header">
+        <div style="display:flex; align-items:center;">
+          <button class="toggle-sidebar-btn" onclick="toggleSidebar()">☰</button>
+          <h1 style="margin-left:15px;">Finance AI Assistant</h1>
+          <span id="status" class="status offline">● Offline</span>
+        </div>
       </div>
       <div id="chatMessages"></div>
       <div class="chat-input-area">
-        <input id="chatInput" placeholder="Ask about investments, stocks, or budgeting..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <input id="chatInput" placeholder="Ask about investments, stocks, or budgeting..." 
+               onkeypress="if(event.key==='Enter') sendMessage()">
         <button class="mic-btn" id="micBtn" title="Speak"><span class="mic-icon">🎤</span></button>
         <button class="btn" onclick="sendMessage()">Send</button>
-      </div>
-    </div>
-
-    <!-- Tracker Panel -->
-    <div class="panel">
-      <div class="panel-header">Smart Finance Tracker</div>
-      <div class="tracker-content">
-        <div class="tracker-form">
-          <div class="form-row">
-            <input type="text" id="description" placeholder="Description">
-            <input type="number" id="amount" placeholder="Amount">
-          </div>
-          <div class="form-row">
-            <select id="type">
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-            </select>
-            <input type="date" id="date">
-          </div>
-          <button class="btn" onclick="addTransaction()" style="width:100%">Add Transaction</button>
-        </div>
-        <div class="summary-cards">
-          <div class="summary-card"><h3>Total Income</h3><div class="amount" id="totalIncome">₹0</div></div>
-          <div class="summary-card"><h3>Total Expense</h3><div class="amount" id="totalExpense">₹0</div></div>
-        </div>
-        <h3 style="margin-top:20px;">Balance: <span id="balance">₹0</span></h3>
-        <h3 style="margin-top:20px;">Monthly Summary</h3>
-        <canvas id="monthlyChart" height="150"></canvas>
-        <div class="transaction-list" id="transactionList"></div>
       </div>
     </div>
   </div>
@@ -165,13 +190,16 @@
   <script>
     const API_URL = "http://localhost:5000";
     const statusEl = document.getElementById("status");
-    document.getElementById("date").valueAsDate = new Date();
+    let currentUser = null;
+    let currentChatId = null;
+    let currentMessages = [];
 
+    // Check health
     async function checkHealth(){
       try{
         const res = await fetch(`${API_URL}/health`);
         const data = await res.json();
-        if(data.chatbot_ready||data.gemini_ready){
+        if(data.chatbot_ready){
           statusEl.textContent="● Online";
           statusEl.className="status ok";
         }else throw new Error();
@@ -182,7 +210,90 @@
     }
     checkHealth(); setInterval(checkHealth,10000);
 
-    // ---- Chat Logic ----
+    // Login
+    async function login(){
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if(!username || !password) return alert("Enter username and password!");
+      
+      try{
+        const res = await fetch(`${API_URL}/login`, {
+          method:"POST", headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        if(data.success){
+          currentUser = username;
+          document.getElementById("loginPopup").classList.add("hidden");
+          document.getElementById("userInfo").style.display="block";
+          document.getElementById("displayUsername").textContent = username;
+          loadChatHistory();
+        }else{
+          alert(data.message || "Login failed!");
+        }
+      }catch(e){
+        alert("Login error: " + e.message);
+      }
+    }
+
+    function skipLogin(){
+      document.getElementById("loginPopup").classList.add("hidden");
+    }
+
+    function logout(){
+      currentUser = null;
+      currentChatId = null;
+      currentMessages = [];
+      document.getElementById("userInfo").style.display="none";
+      document.getElementById("chatHistoryList").innerHTML = "";
+      document.getElementById("chatMessages").innerHTML = "";
+      document.getElementById("loginPopup").classList.remove("hidden");
+    }
+
+    // Toggle Sidebar
+    function toggleSidebar(){
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    }
+
+    // Load Chat History
+    async function loadChatHistory(){
+      if(!currentUser) return;
+      try{
+        const res = await fetch(`${API_URL}/chat_history?username=${currentUser}`);
+        const data = await res.json();
+        const list = document.getElementById("chatHistoryList");
+        list.innerHTML = "";
+        data.chats.forEach(chat => {
+          list.innerHTML += `
+            <div class="chat-history-item" onclick="loadChat('${chat.id}')">
+              ${chat.title}
+              <small>${new Date(chat.timestamp).toLocaleString()}</small>
+            </div>`;
+        });
+      }catch(e){
+        console.error("Error loading chat history:", e);
+      }
+    }
+
+    // Load specific chat
+    async function loadChat(chatId){
+      try{
+        const res = await fetch(`${API_URL}/load_chat?username=${currentUser}&chat_id=${chatId}`);
+        const data = await res.json();
+        currentChatId = chatId;
+        currentMessages = data.messages;
+        
+        const chatMessages = document.getElementById("chatMessages");
+        chatMessages.innerHTML = "";
+        data.messages.forEach(msg => {
+          addChatMessage(msg.text, msg.isUser);
+        });
+      }catch(e){
+        console.error("Error loading chat:", e);
+      }
+    }
+
+    // Chat Logic
     const chatMessages=document.getElementById("chatMessages");
     const chatInput=document.getElementById("chatInput");
 
@@ -197,51 +308,43 @@
     async function sendMessage(){
       const msg=chatInput.value.trim();
       if(!msg) return;
+      
       addChatMessage(msg,true);
+      currentMessages.push({text:msg, isUser:true});
       chatInput.value="";
+      
       const loading=document.createElement("div");
       loading.className="message bot";
       loading.innerHTML=`<div class="message-content loading">
         <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
       </div>`;
       chatMessages.appendChild(loading);
+      
       try{
         const res=await fetch(`${API_URL}/chat`,{
           method:"POST",headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({message:msg})
+          body:JSON.stringify({
+            message:msg, 
+            username:currentUser, 
+            chat_id:currentChatId
+          })
         });
         const data=await res.json();
         loading.remove();
-        addChatMessage(data.response||"⚠️ No response.",false);
+        
+        addChatMessage(data.response||"No response.",false);
+        currentMessages.push({text:data.response, isUser:false});
+        
+        if(data.chat_id) currentChatId = data.chat_id;
+        if(currentUser) loadChatHistory();
+        
       }catch{
         loading.remove();
-        addChatMessage("❌ Could not connect to backend.",false);
+        addChatMessage("Could not connect to backend.",false);
       }
     }
-async function addTransaction(){
-  const desc = description.value.trim();
-  const amt = parseFloat(amount.value);
-  if(!desc || !amt) return alert("Fill all fields!");
 
-  // 🧠 Ask backend to categorize
-  let category = "Other";
-  try{
-    const res = await fetch(`${API_URL}/categorize`, {
-      method:"POST", headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({description:desc, amount:amt})
-    });
-    const data = await res.json();
-    category = data.category;
-  }catch{}
-
-  transactions.push({id:Date.now(), description:desc, amount:amt, type:document.getElementById("type").value, date:document.getElementById("date").value, category});
-  localStorage.setItem("transactions", JSON.stringify(transactions));
-  description.value=""; amount.value="";
-  updateTracker();
-}
-
-
-    // ---- Voice Recognition ----
+    // Voice Recognition
     const micBtn=document.getElementById("micBtn");
     let recognition;
     if("webkitSpeechRecognition" in window){
@@ -261,103 +364,6 @@ async function addTransaction(){
       micBtn.disabled=true;
       micBtn.title="Speech recognition not supported";
     }
-
-    // ---- Tracker Logic ----
-    let transactions=JSON.parse(localStorage.getItem("transactions"))||[];
-    function addTransaction(){
-      const desc=description.value, amt=parseFloat(amount.value),
-            type=document.getElementById("type").value, date=document.getElementById("date").value;
-      if(!desc||!amt) return alert("Fill all fields!");
-      transactions.push({id:Date.now(),description:desc,amount:amt,type,date});
-      localStorage.setItem("transactions",JSON.stringify(transactions));
-      description.value=""; amount.value=""; updateTracker();
-    }
-    function deleteTransaction(id){
-      transactions=transactions.filter(t=>t.id!==id);
-      localStorage.setItem("transactions",JSON.stringify(transactions));
-      updateTracker();
-    }
-    function updateTracker(){
-      const list=document.getElementById("transactionList");
-      list.innerHTML="";
-      let income=0,expense=0;
-      transactions.forEach(t=>{
-        if(t.type==="income") income+=t.amount; else expense+=t.amount;
-        list.innerHTML+=`
-          <div class="transaction-item">
-            <div>
-              <div class="transaction-type ${t.type}">${t.description}</div>
-              <small>${new Date(t.date).toLocaleDateString()}</small>
-            </div>
-            <div>
-              <div class="transaction-amount ${t.type}">
-                ${t.type==="income"?'+':'-'}₹${t.amount}
-              </div>
-              <button class="delete-btn" onclick="deleteTransaction(${t.id})">×</button>
-            </div>
-          </div>`;
-      });
-      totalIncome.textContent=`₹${income.toFixed(2)}`;
-      totalExpense.textContent=`₹${expense.toFixed(2)}`;
-      balance.textContent=`₹${(income-expense).toFixed(2)}`;
-    }
-    updateTracker();
   </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js">
-  let chart;
-
-function updateChart() {
-  const ctx = document.getElementById("monthlyChart").getContext("2d");
-
-  // Prepare monthly totals
-  const monthlyData = {};
-  transactions.forEach(t => {
-    const month = new Date(t.date).toLocaleString("default", { month: "short" });
-    if (!monthlyData[month]) monthlyData[month] = { income: 0, expense: 0 };
-    monthlyData[month][t.type] += t.amount;
-  });
-
-  const labels = Object.keys(monthlyData);
-  const incomeData = labels.map(m => monthlyData[m].income);
-  const expenseData = labels.map(m => monthlyData[m].expense);
-
-  // Destroy old chart before creating new one
-  if (chart) chart.destroy();
-
-  chart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Income",
-          data: incomeData,
-          backgroundColor: "rgba(16, 185, 129, 0.7)"
-        },
-        {
-          label: "Expense",
-          data: expenseData,
-          backgroundColor: "rgba(239, 68, 68, 0.7)"
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { labels: { color: "white" } },
-        title: {
-          display: false
-        }
-      },
-      scales: {
-        x: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" } },
-        y: { ticks: { color: "white" }, grid: { color: "rgba(255,255,255,0.1)" } }
-      }
-    }
-  });
-}
-
-</script>
-
 </body>
 </html>

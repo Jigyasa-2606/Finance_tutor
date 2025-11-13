@@ -33,7 +33,7 @@ class FinanceAIChatbot:
         self._check_connection()
 
     def _select_model(self):
-        return "gemini-2.5-pro" 
+        return "gemini-2.5-flash" 
 
     def _check_connection(self):
         # verify Gemini API connectivity
